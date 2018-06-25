@@ -29,6 +29,10 @@
   name = "github.com/miekg/dns"
   version = "1.0.8"
 
+[[constraint]]
+  name = "github.com/BurntSushi/toml"
+  version = "0.3.0"
+
 [prune]
   go-tests = true
   unused-packages = true

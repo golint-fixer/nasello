@@ -3,6 +3,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"github.com/miekg/dns"
 	"github.com/piger/nasello"
 	"log"
@@ -28,12 +29,24 @@ func main() {
 	flag.Parse()
 
 	configuration := nasello.ReadConfig(*configFile)
-	for _, filter := range configuration.Filters {
+	for _, rule := range configuration.Rules {
 		// Ensure that each pattern is a FQDN name
-		pattern := dns.Fqdn(filter.Pattern)
+		pattern := dns.Fqdn(rule.Match)
+		resolver := configuration.Resolvers[rule.Resolver]
 
-		log.Printf("Proxing %s on %v(%s)\n", pattern, strings.Join(filter.Addresses, ", "), filter.Protocol)
-		dns.HandleFunc(pattern, nasello.ServerHandler(filter.Addresses, filter.Protocol))
+		log.Printf("Proxing %s on %v(%s)\n", pattern, strings.Join(resolver.Servers, ", "), resolver.Protocol)
+		var addresses []string
+		var port int
+		if resolver.Port == 0 {
+			port = 53
+		} else {
+			port = resolver.Port
+		}
+		for _, a := range resolver.Servers {
+			addresses = append(addresses, fmt.Sprintf("%s:%d", a, port))
+		}
+
+		dns.HandleFunc(pattern, nasello.ServerHandler(addresses, resolver.Protocol))
 	}
 
 	go serve("tcp", *listenAddr)
